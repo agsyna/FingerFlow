@@ -1,0 +1,215 @@
+#include "Wire.h"
+#include <BleMouse.h>
+#include "paj7620.h"
+#include "MPU6050.h"
+
+BleMouse bleMouse;
+MPU6050 mpu;
+
+int16_t ax, ay, az;
+int16_t gx, gy, gz; 
+float vx, vy; 
+int count =1;
+bool laserState = false;
+// bool isMoving = false;
+// bool isGesture = false;
+
+// int pushButton1 = 26;
+// int pushButton2 = 25;
+// int pushButton3 = 33;
+// int pushButton4 = 32;
+# define PAJ_BUTTON 25
+int my =1;
+int laserPin = 5;
+
+#define GES_REACTION_TIME      500             // Reaction time according to the actual circumstance.
+#define GES_ENTRY_TIME         800             // For Forward/Backward gestures, reaction time should be less than GES_ENTRY_TIME(0.8s). 
+#define GES_QUIT_TIME          1000
+
+void setup() {
+  uint8_t error = 0;
+  Serial.begin(115200);
+  Wire.begin();
+  mpu.initialize();
+  bleMouse.begin();
+//  pinMode(pushButton1, INPUT);
+  // pinMode(pushButton2, INPUT);
+  // pinMode(pushButton3, INPUT);
+  // pinMode(pushButton4, INPUT);
+  pinMode(PAJ_BUTTON, INPUT_PULLUP);
+  pinMode(laserPin, OUTPUT);
+  digitalWrite(laserPin, LOW);  // Initialising laser as low
+  
+  error = paj7620Init();          // initialize Paj7620 registers
+    if (error) {
+        Serial.print("INIT ERROR,CODE:");
+        Serial.println(error);
+    } else {
+        Serial.println("INIT OK");
+    }
+    Serial.println("Please input your gestures:\n");
+}
+
+void loop() 
+{
+  // int buttonState1 = digitalRead(pushButton1); 
+  // int buttonState2 = digitalRead(pushButton2); 
+  // int buttonState3 = digitalRead(pushButton3); 
+  // Serial.print("SET 1  = ");
+  // Serial.println(buttonState1);
+  // Serial.print("SET 2  = ");
+  // Serial.println(buttonState2);
+  // Serial.print("SET 3  = ");
+  // Serial.println(buttonState3);
+
+  if (digitalRead(PAJ_BUTTON) == LOW){ 	 
+    uint8_t data = 0, data1 = 0, error;
+    error = paj7620ReadReg(0x43, 1, &data);				// Read Bank_0_Reg_0x43/0x44 for gesture result.
+    if (!error) 
+    {
+      switch (data) 									// When different gestures be detected, the variable 'data' will be set to different values by paj7620ReadReg(0x43, 1, &data).
+      {
+        case GES_RIGHT_FLAG:
+          delay(GES_ENTRY_TIME);
+          paj7620ReadReg(0x43, 1, &data);
+          if(data == GES_FORWARD_FLAG) 
+          {
+            Serial.println("Forward");
+            delay(GES_QUIT_TIME);
+          }
+          else if(data == GES_BACKWARD_FLAG) 
+          {
+            Serial.println("Backward");
+            delay(GES_QUIT_TIME);
+          }
+          else
+          {
+            Serial.println("Right");
+            bleMouse.click(MOUSE_LEFT);
+
+          }          
+          break;
+        case GES_LEFT_FLAG: 
+          delay(GES_ENTRY_TIME);
+          paj7620ReadReg(0x43, 1, &data);
+          if(data == GES_FORWARD_FLAG) 
+          {
+            Serial.println("Forward");
+            delay(GES_QUIT_TIME);
+          }
+          else if(data == GES_BACKWARD_FLAG) 
+          {
+            Serial.println("Backward");
+            delay(GES_QUIT_TIME);
+          }
+          else
+          {
+            Serial.println("Left");
+            bleMouse.click(0x0e);
+
+          }          
+          break;
+        case GES_UP_FLAG:
+          delay(GES_ENTRY_TIME);
+          paj7620ReadReg(0x43, 1, &data);
+          if(data == GES_FORWARD_FLAG) 
+          {
+            Serial.println("Forward");
+            delay(GES_QUIT_TIME);
+          }
+          else if(data == GES_BACKWARD_FLAG) 
+          {
+            Serial.println("Backward");
+            delay(GES_QUIT_TIME);
+          }
+          else
+          {
+            Serial.println("Up");
+            bleMouse.move(0, 0, 1);
+
+          }          
+          break;
+        case GES_DOWN_FLAG:
+          delay(GES_ENTRY_TIME);
+          paj7620ReadReg(0x43, 1, &data);
+          if(data == GES_FORWARD_FLAG) 
+          {
+            Serial.println("Forward");
+            delay(GES_QUIT_TIME);
+          }
+          else if(data == GES_BACKWARD_FLAG) 
+          {
+            Serial.println("Backward");
+            delay(GES_QUIT_TIME);
+          }
+          else
+          {
+            Serial.println("Down");
+            bleMouse.move(0, 0, -1);
+
+          }          
+          break;
+        case GES_FORWARD_FLAG:
+          Serial.println("Forward");
+          delay(GES_QUIT_TIME);
+          bleMouse.click(0x6B);
+
+          break;
+        case GES_BACKWARD_FLAG:		  
+          Serial.println("Backward");
+          delay(GES_QUIT_TIME);
+          bleMouse.click(0x44);
+
+          break;
+        case GES_CLOCKWISE_FLAG:
+          Serial.println("Clockwise");
+          count +=1;
+          while(count%2==0)
+          {
+            mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+            // vx,vy - mouse coordinates
+            vx = -(gx+260)/155;
+            vy = (gy+260)/155;
+            Serial.println(vx);
+            Serial.println(vy);
+            //Serial.println("okayss");
+            bleMouse.move(vx,vy);
+            delay(50);
+            Serial.print("count");
+            Serial.println(count);
+            
+          }
+          break;
+
+        
+        case GES_COUNT_CLOCKWISE_FLAG:
+          Serial.println("anti-clockwise");
+          my +=1;
+          Serial.println(my);
+          if(!laserState) {
+            digitalWrite(laserPin, HIGH); 
+            laserState = true;
+          } else {
+            digitalWrite(laserPin, LOW);
+            laserState = false;
+          }
+          // while(buttonState3 == HIGH) {
+          // buttonState3 = digitalRead(pushButton3); 
+          
+          break;  
+        default:
+          paj7620ReadReg(0x44, 1, &data1);
+          if (data1 == GES_WAVE_FLAG) 
+          {
+            Serial.println("wave");
+          }
+          break;
+      
+      }  
+    }
+   
+  }
+
+  
+
+}
