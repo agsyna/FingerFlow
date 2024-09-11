@@ -1,10 +1,9 @@
 # FingerFlow
 We all have seen in movies how people or robots can operate displays, monitors, or other gadgets from a distance with simply a wave of their hands or a click of their fingers. However, this is only possible thanks to graphics; in real life, there is no such mechanism. This is the point where FingerFlow comes for rescue.
 
-- It is like having a personal instructional assistant at your fingertips.
-- It combines various sensors with a laser module to make gadget use easier and more entertaining. 
-- It's meant to be extremely user-friendly, allowing presenters to focus on their material without worrying about technical difficulties or far away distances, adding another degree of ease to its creative capabilities. 
-- It's all about simplifying education and presentations while still incorporating some creativity.
+Ring that allows you to manage your tech devices from great distances 
+
+Features- Laser, Mouse Functionality and Gesture Recognition
 
 ## Libraries Used
 [BleMouse](https://github.com/T-vK/ESP32-BLE-Mouse)<br />
